@@ -73,6 +73,7 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
             else -> getDecoratedBottom(lastView) - getDecoratedTop(firstView) <= height
         }
     }
+
     private fun calculateWhenMoveUp(dy: Int): Int {
         val lastView = getChildAt(childCount - 1)
 
