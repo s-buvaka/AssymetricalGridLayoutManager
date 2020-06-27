@@ -8,6 +8,7 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
 
     private var spanCount: Int = DEFAULT_SPAN_COUNT
     private var isSquareCell = true
+    private var cell = Cell.createSquare(1)
 
     override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams =
         RecyclerView.LayoutParams(
@@ -25,7 +26,7 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
         recycler: RecyclerView.Recycler
     ) {
         var column = 0
-        var stroke = 0
+        var row = 0
 
         for (position in 0 until state.itemCount) {
             val view: View = recycler.getViewForPosition(position)
@@ -38,17 +39,17 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
 
             measureChildWithDecorationsAndMargin(view, widthSpec, heightSpec)
 
-            val top = paddingTop + cellHeight * stroke
+            val top = paddingTop + cellHeight * row
             val bottom = top + cellHeight
             val left = paddingLeft + cellWidth * column
             val rights = left + cellWidth
 
             addView(view, position)
             layoutDecorated(view, left, top, rights, bottom)
-            column++
+            column += cell.column
 
             if ((position + 1) % spanCount == 0) {
-                stroke++
+                row += cell.row
                 column = 0
             }
         }
