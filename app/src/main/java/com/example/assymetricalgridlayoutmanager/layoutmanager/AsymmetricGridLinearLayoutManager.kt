@@ -1,11 +1,13 @@
 package com.example.assymetricalgridlayoutmanager.layoutmanager
 
+import android.graphics.Rect
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 
 class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
 
     private var spanCount: Int = DEFAULT_SPAN_COUNT
+    private var isSquareCell = true
 
     override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams =
         RecyclerView.LayoutParams(
@@ -27,16 +29,21 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
 
         for (position in 0 until state.itemCount) {
             val view: View = recycler.getViewForPosition(position)
-            val sector = width / spanCount
-            measureChildWithMargins(view, 0, 0)
 
-            val top = paddingTop + getDecoratedMeasuredHeight(view) * stroke
-            val bottom = top + getDecoratedMeasuredHeight(view)
-            val left = paddingLeft + sector * column
-            val rights = left + sector
+            val cellWidth = (width - paddingStart - paddingEnd) / spanCount
+            val cellHeight = if (isSquareCell) cellWidth else getDecoratedMeasuredHeight(view)
+
+            val widthSpec = View.MeasureSpec.makeMeasureSpec(cellWidth, View.MeasureSpec.EXACTLY)
+            val heightSpec = View.MeasureSpec.makeMeasureSpec(cellHeight, View.MeasureSpec.EXACTLY)
+
+            measureChildWithDecorationsAndMargin(view, widthSpec, heightSpec)
+
+            val top = paddingTop + cellHeight * stroke
+            val bottom = top + cellHeight
+            val left = paddingLeft + cellWidth * column
+            val rights = left + cellWidth
 
             addView(view, position)
-
             layoutDecorated(view, left, top, rights, bottom)
             column++
 
@@ -44,8 +51,37 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
                 stroke++
                 column = 0
             }
-
         }
+    }
+
+    private fun measureChildWithDecorationsAndMargin(
+        child: View,
+        widthSpec: Int,
+        heightSpec: Int
+    ) {
+        var wSpec = widthSpec
+        var hSpec = heightSpec
+        val decorRect = Rect()
+        calculateItemDecorationsForChild(child, decorRect)
+        val params = child.layoutParams as RecyclerView.LayoutParams
+        wSpec = updateSpecWithExtra(
+            wSpec, params.leftMargin + decorRect.left,
+            params.rightMargin + decorRect.right
+        )
+        hSpec = updateSpecWithExtra(
+            hSpec, params.topMargin + decorRect.top,
+            params.bottomMargin + decorRect.bottom
+        )
+        child.measure(wSpec, hSpec)
+    }
+
+    private fun updateSpecWithExtra(spec: Int, startInset: Int, endInset: Int): Int {
+        if (startInset == 0 && endInset == 0) return spec
+
+        val mode = View.MeasureSpec.getMode(spec)
+        return if (mode == View.MeasureSpec.AT_MOST || mode == View.MeasureSpec.EXACTLY) {
+            View.MeasureSpec.makeMeasureSpec(View.MeasureSpec.getSize(spec) - startInset - endInset, mode)
+        } else spec
     }
 
     override fun canScrollVertically(): Boolean = true
@@ -93,7 +129,7 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
         return when {
             lastView == null -> throw NullPointerException("Last view in recycler is null")
             getPosition(lastView) < itemCount - 1 -> dy
-            else -> (getDecoratedBottom(lastView) - height).coerceAtMost(dy)
+            else -> (getDecoratedBottom(lastView) - height + paddingBottom).coerceAtMost(dy)
         }
     }
 
@@ -103,7 +139,7 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
         return when {
             firstView == null -> throw NullPointerException("First view in recycler is null")
             getPosition(firstView) > 0 -> dy
-            else -> getDecoratedTop(firstView).coerceAtLeast(dy)
+            else -> (getDecoratedTop(firstView) - paddingTop).coerceAtLeast(dy)
         }
     }
 
