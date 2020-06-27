@@ -5,6 +5,8 @@ import androidx.recyclerview.widget.RecyclerView
 
 class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
 
+    private var spanCount: Int = DEFAULT_SPAN_COUNT
+
     override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams =
         RecyclerView.LayoutParams(
             RecyclerView.LayoutParams.WRAP_CONTENT,
@@ -20,18 +22,29 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
         state: RecyclerView.State,
         recycler: RecyclerView.Recycler
     ) {
-        var top = paddingTop
-        var bottom: Int
-        val left = paddingLeft
-        val rights = width - paddingRight
+        var column = 0
+        var stroke = 0
 
         for (position in 0 until state.itemCount) {
             val view: View = recycler.getViewForPosition(position)
-            addView(view, position)
+            val sector = width / spanCount
             measureChildWithMargins(view, 0, 0)
-            bottom = top + getDecoratedMeasuredHeight(view)
+
+            val top = paddingTop + getDecoratedMeasuredHeight(view) * stroke
+            val bottom = top + getDecoratedMeasuredHeight(view)
+            val left = paddingLeft + sector * column
+            val rights = left + sector
+
+            addView(view, position)
+
             layoutDecorated(view, left, top, rights, bottom)
-            top = bottom
+            column++
+
+            if ((position + 1) % spanCount == 0) {
+                stroke++
+                column = 0
+            }
+
         }
     }
 
@@ -92,5 +105,10 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
             getPosition(firstView) > 0 -> dy
             else -> getDecoratedTop(firstView).coerceAtLeast(dy)
         }
+    }
+
+    companion object {
+
+        private const val DEFAULT_SPAN_COUNT = 3
     }
 }
