@@ -4,11 +4,12 @@ import android.graphics.Rect
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 
-class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
+// todo add constructors for XML
+class AsymmetricGridLinearLayoutManager(private val spanCount: Int = DEFAULT_SPAN_COUNT, private val spanProvider: SpanProvider) :
+    RecyclerView.LayoutManager() {
 
-    private var spanCount: Int = DEFAULT_SPAN_COUNT
     private var isSquareCell = true
-    private var cell = Cell.createSquare(1)
+    private var matrix: MutableList<Array<Boolean>> = mutableListOf()
 
     override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams =
         RecyclerView.LayoutParams(
@@ -25,31 +26,31 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
         state: RecyclerView.State,
         recycler: RecyclerView.Recycler
     ) {
+        matrix.add(Array(spanCount) { false })
         var column = 0
         var row = 0
 
         for (position in 0 until state.itemCount) {
+            val spanInfo = spanProvider.getSpanOnPosition(position)
+
             val view: View = recycler.getViewForPosition(position)
 
             val cellWidth = (width - paddingStart - paddingEnd) / spanCount
             val cellHeight = if (isSquareCell) cellWidth else getDecoratedMeasuredHeight(view)
 
-            val widthSpec = View.MeasureSpec.makeMeasureSpec(cellWidth, View.MeasureSpec.EXACTLY)
-            val heightSpec = View.MeasureSpec.makeMeasureSpec(cellHeight, View.MeasureSpec.EXACTLY)
+            val top = paddingTop + cellHeight * row * spanInfo.row
+            val bottom = top + cellHeight * spanInfo.row
+            val left = paddingLeft + cellWidth * column * spanInfo.column
+            val rights = left + cellWidth * spanInfo.column
 
-            measureChildWithDecorationsAndMargin(view, widthSpec, heightSpec)
-
-            val top = paddingTop + cellHeight * row
-            val bottom = top + cellHeight
-            val left = paddingLeft + cellWidth * column
-            val rights = left + cellWidth
+            measureChildWithDecorationsAndMargin(view, cellWidth * spanInfo.column, cellHeight * spanInfo.row)
 
             addView(view, position)
             layoutDecorated(view, left, top, rights, bottom)
-            column += cell.column
 
+            column += spanInfo.column
             if ((position + 1) % spanCount == 0) {
-                row += cell.row
+                row ++
                 column = 0
             }
         }
@@ -57,23 +58,24 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
 
     private fun measureChildWithDecorationsAndMargin(
         child: View,
-        widthSpec: Int,
-        heightSpec: Int
+        cellWidth: Int,
+        cellHeight: Int
     ) {
-        var wSpec = widthSpec
-        var hSpec = heightSpec
+        var widthSpec = View.MeasureSpec.makeMeasureSpec(cellWidth, View.MeasureSpec.EXACTLY)
+        var heightSpec = View.MeasureSpec.makeMeasureSpec(cellHeight, View.MeasureSpec.EXACTLY)
+
         val decorRect = Rect()
         calculateItemDecorationsForChild(child, decorRect)
         val params = child.layoutParams as RecyclerView.LayoutParams
-        wSpec = updateSpecWithExtra(
-            wSpec, params.leftMargin + decorRect.left,
+        widthSpec = updateSpecWithExtra(
+            widthSpec, params.leftMargin + decorRect.left,
             params.rightMargin + decorRect.right
         )
-        hSpec = updateSpecWithExtra(
-            hSpec, params.topMargin + decorRect.top,
+        heightSpec = updateSpecWithExtra(
+            heightSpec, params.topMargin + decorRect.top,
             params.bottomMargin + decorRect.bottom
         )
-        child.measure(wSpec, hSpec)
+        child.measure(widthSpec, heightSpec)
     }
 
     private fun updateSpecWithExtra(spec: Int, startInset: Int, endInset: Int): Int {
@@ -146,6 +148,6 @@ class AsymmetricGridLinearLayoutManager : RecyclerView.LayoutManager() {
 
     companion object {
 
-        private const val DEFAULT_SPAN_COUNT = 3
+        private const val DEFAULT_SPAN_COUNT = 4
     }
 }
