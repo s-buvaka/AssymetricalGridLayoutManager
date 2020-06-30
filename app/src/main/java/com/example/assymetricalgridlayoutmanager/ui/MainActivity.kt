@@ -10,6 +10,7 @@ import com.example.assymetricalgridlayoutmanager.layoutmanager.Matrix
 import com.example.assymetricalgridlayoutmanager.layoutmanager.SpanInfo
 import com.example.assymetricalgridlayoutmanager.layoutmanager.SpanProvider
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlin.random.Random
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,7 +25,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun initRecycler() {
         recyclerView.layoutManager = AsymmetricGridLinearLayoutManager(spanProvider = object : SpanProvider {
-            override fun getSpanOnPosition(position: Int): SpanInfo = SpanInfo.createSquare(2)
+            override fun getSpanOnPosition(position: Int): SpanInfo = SpanInfo.createSquare(Random.nextInt(4))
         })
         recyclerView.adapter = adapter
         adapter.updateAdapter(getData())

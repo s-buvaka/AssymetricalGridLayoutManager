@@ -9,7 +9,7 @@ class AsymmetricGridLinearLayoutManager(private val spanCount: Int = DEFAULT_SPA
     RecyclerView.LayoutManager() {
 
     private var isSquareCell = true
-    private var matrix: MutableList<Array<Boolean>> = mutableListOf()
+    private var matrix = Matrix(spanCount)
 
     override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams =
         RecyclerView.LayoutParams(
@@ -26,33 +26,24 @@ class AsymmetricGridLinearLayoutManager(private val spanCount: Int = DEFAULT_SPA
         state: RecyclerView.State,
         recycler: RecyclerView.Recycler
     ) {
-        matrix.add(Array(spanCount) { false })
-        var column = 0
-        var row = 0
-
         for (position in 0 until state.itemCount) {
             val spanInfo = spanProvider.getSpanOnPosition(position)
+            val coordinates = matrix.add(Matrix.Point(spanInfo.column, spanInfo.row))
 
             val view: View = recycler.getViewForPosition(position)
 
             val cellWidth = (width - paddingStart - paddingEnd) / spanCount
             val cellHeight = if (isSquareCell) cellWidth else getDecoratedMeasuredHeight(view)
 
-            val top = paddingTop + cellHeight * row * spanInfo.row
-            val bottom = top + cellHeight * spanInfo.row
-            val left = paddingLeft + cellWidth * column * spanInfo.column
-            val rights = left + cellWidth * spanInfo.column
+            val top = paddingTop + cellHeight * coordinates.top
+            val bottom = top + cellHeight * coordinates.bottom
+            val left = paddingLeft + cellWidth * coordinates.left
+            val right = left + cellWidth * coordinates.right
 
             measureChildWithDecorationsAndMargin(view, cellWidth * spanInfo.column, cellHeight * spanInfo.row)
 
             addView(view, position)
-            layoutDecorated(view, left, top, rights, bottom)
-
-            column += spanInfo.column
-            if ((position + 1) % spanCount == 0) {
-                row ++
-                column = 0
-            }
+            layoutDecorated(view, left, top, right, bottom)
         }
     }
 

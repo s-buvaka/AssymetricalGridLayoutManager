@@ -37,7 +37,7 @@ class Matrix(private val width: Int) {
     }
 
     private fun addEmptyRowsIfNeed(desiredSize: Int) {
-        while (cursor.row + desiredSize > matrix.size) {
+        while (cursor.row + desiredSize >= matrix.size) {
             matrix.add(Array(width) { false })
         }
     }
@@ -51,6 +51,7 @@ class Matrix(private val width: Int) {
                     return
                 }
             }
+            cursor.row++
         }
     }
 
