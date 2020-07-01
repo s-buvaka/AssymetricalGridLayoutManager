@@ -22,9 +22,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initRecycler() {
-        recyclerView.layoutManager = AsymmetricGridLinearLayoutManager(spanCount = 6, spanProvider = object : SpanProvider {
-            override fun getSpanOnPosition(position: Int): SpanInfo = SpanInfo.createSquare(Random.nextInt(1, 6))
+        val layoutManager = AsymmetricGridLinearLayoutManager(spanCount = 6, spanProvider = object : SpanProvider {
+            override fun getSpanOnPosition(position: Int): SpanInfo = SpanInfo(Random.nextInt(1, 6), Random.nextInt(1, 6))
         })
+        layoutManager.isSquareCell = false
+        recyclerView.layoutManager = layoutManager
         recyclerView.adapter = adapter
         adapter.updateAdapter(getData())
     }

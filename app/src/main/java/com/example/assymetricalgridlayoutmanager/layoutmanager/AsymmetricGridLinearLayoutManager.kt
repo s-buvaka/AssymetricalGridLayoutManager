@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 class AsymmetricGridLinearLayoutManager(private val spanCount: Int, private val spanProvider: SpanProvider) :
     RecyclerView.LayoutManager() {
 
-    private var isSquareCell = true
+    var isSquareCell = true
     private var matrix = Matrix(spanCount)
     private var lowestView: ViewWrapper? = null
 
@@ -44,9 +44,10 @@ class AsymmetricGridLinearLayoutManager(private val spanCount: Int, private val 
             val coordinates = matrix.add(Matrix.Point(spanInfo.column, spanInfo.row))
 
             val view: View = recycler.getViewForPosition(position)
+            measureChildWithMargins(view, 0, 0)
 
             val cellWidth = (width - paddingStart - paddingEnd) / spanCount
-            val cellHeight = if (isSquareCell) cellWidth else getDecoratedMeasuredHeight(view)
+            val cellHeight = calculateCellHeight(cellWidth, view)
 
             val top = paddingTop + cellHeight * coordinates.top
             val bottom = paddingBottom + cellHeight * coordinates.bottom
@@ -60,6 +61,14 @@ class AsymmetricGridLinearLayoutManager(private val spanCount: Int, private val 
             checkLowestView(view, bottom, right)
         }
     }
+
+    private fun calculateCellHeight(cellWidth: Int, view: View): Int =
+        if (isSquareCell) {
+            cellWidth
+        } else {
+            val percent: Float = getDecoratedMeasuredHeight(view).toFloat() / getDecoratedMeasuredWidth(view).toFloat()
+            (percent * cellWidth).toInt()
+        }
 
     private fun measureChildWithDecorationsAndMargin(
         child: View,
