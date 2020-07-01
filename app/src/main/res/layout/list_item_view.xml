@@ -8,7 +8,7 @@
     android:layout_height="200dp">
 
     <TextView
-        android:background="@color/colorAccent"
+        android:background="@android:color/transparent"
         android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

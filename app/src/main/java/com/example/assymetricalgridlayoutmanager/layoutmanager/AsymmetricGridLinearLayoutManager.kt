@@ -5,11 +5,12 @@ import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 
 // todo add constructors for XML
-class AsymmetricGridLinearLayoutManager(private val spanCount: Int = DEFAULT_SPAN_COUNT, private val spanProvider: SpanProvider) :
+class AsymmetricGridLinearLayoutManager(private val spanCount: Int, private val spanProvider: SpanProvider) :
     RecyclerView.LayoutManager() {
 
     private var isSquareCell = true
     private var matrix = Matrix(spanCount)
+    private var lowestView: ViewWrapper? = null
 
     override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams =
         RecyclerView.LayoutParams(
@@ -20,6 +21,18 @@ class AsymmetricGridLinearLayoutManager(private val spanCount: Int = DEFAULT_SPA
     override fun onLayoutChildren(recycler: RecyclerView.Recycler, state: RecyclerView.State) {
         detachAndScrapAttachedViews(recycler)
         fillRecycler(state, recycler)
+    }
+
+    override fun canScrollVertically(): Boolean = true
+
+    override fun scrollVerticallyBy(
+        dy: Int,
+        recycler: RecyclerView.Recycler?,
+        state: RecyclerView.State?
+    ): Int {
+        val scrollDistance = calculateScrollDistance(dy)
+        offsetChildrenVertical(-scrollDistance)
+        return scrollDistance
     }
 
     private fun fillRecycler(
@@ -36,14 +49,15 @@ class AsymmetricGridLinearLayoutManager(private val spanCount: Int = DEFAULT_SPA
             val cellHeight = if (isSquareCell) cellWidth else getDecoratedMeasuredHeight(view)
 
             val top = paddingTop + cellHeight * coordinates.top
-            val bottom = top + cellHeight * coordinates.bottom
+            val bottom = paddingBottom + cellHeight * coordinates.bottom
             val left = paddingLeft + cellWidth * coordinates.left
-            val right = left + cellWidth * coordinates.right
+            val right = paddingRight + cellWidth * coordinates.right
 
-            measureChildWithDecorationsAndMargin(view, cellWidth * spanInfo.column, cellHeight * spanInfo.row)
+            measureChildWithDecorationsAndMargin(view, right - left, bottom - top)
 
             addView(view, position)
             layoutDecorated(view, left, top, right, bottom)
+            checkLowestView(view, bottom, right)
         }
     }
 
@@ -78,16 +92,12 @@ class AsymmetricGridLinearLayoutManager(private val spanCount: Int = DEFAULT_SPA
         } else spec
     }
 
-    override fun canScrollVertically(): Boolean = true
-
-    override fun scrollVerticallyBy(
-        dy: Int,
-        recycler: RecyclerView.Recycler?,
-        state: RecyclerView.State?
-    ): Int {
-        val scrollDistance = calculateScrollDistance(dy)
-        offsetChildrenVertical(-scrollDistance)
-        return scrollDistance
+    private fun checkLowestView(view: View, bottom: Int, right: Int) {
+        lowestView?.let {
+            if (it.bottom < bottom) {
+                lowestView = ViewWrapper(view, bottom, right)
+            }
+        } ?: run { lowestView = ViewWrapper(view, bottom, right) }
     }
 
 
@@ -119,11 +129,12 @@ class AsymmetricGridLinearLayoutManager(private val spanCount: Int = DEFAULT_SPA
 
     private fun calculateWhenMoveUp(dy: Int): Int {
         val lastView = getChildAt(childCount - 1)
+        val lowest = lowestView?.view
 
         return when {
-            lastView == null -> throw NullPointerException("Last view in recycler is null")
+            lastView == null || lowest == null -> throw NullPointerException("Last view in recycler is null")
             getPosition(lastView) < itemCount - 1 -> dy
-            else -> (getDecoratedBottom(lastView) - height + paddingBottom).coerceAtMost(dy)
+            else -> (getDecoratedBottom(lowest) - height + paddingBottom).coerceAtMost(dy)
         }
     }
 
@@ -135,10 +146,5 @@ class AsymmetricGridLinearLayoutManager(private val spanCount: Int = DEFAULT_SPA
             getPosition(firstView) > 0 -> dy
             else -> (getDecoratedTop(firstView) - paddingTop).coerceAtLeast(dy)
         }
-    }
-
-    companion object {
-
-        private const val DEFAULT_SPAN_COUNT = 4
     }
 }
