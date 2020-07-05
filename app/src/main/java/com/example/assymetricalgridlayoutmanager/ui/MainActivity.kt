@@ -2,6 +2,7 @@ package com.example.assymetricalgridlayoutmanager.ui
 
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
 import androidx.appcompat.app.AppCompatActivity
 import com.example.assymetricalgridlayoutmanager.R
 import com.example.assymetricalgridlayoutmanager.layoutmanager.AsymmetricGridLinearLayoutManager
@@ -22,7 +23,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initRecycler() {
-        val layoutManager = AsymmetricGridLinearLayoutManager(spanCount = 6, spanProvider = object : SpanProvider {
+        val layoutManager = AsymmetricGridLinearLayoutManager(this, spanCount = 5, spanProvider = object : SpanProvider {
             override fun getSpanOnPosition(position: Int): SpanInfo = SpanInfo(Random.nextInt(1, 6), Random.nextInt(1, 6))
         })
         layoutManager.isSquareCell = false

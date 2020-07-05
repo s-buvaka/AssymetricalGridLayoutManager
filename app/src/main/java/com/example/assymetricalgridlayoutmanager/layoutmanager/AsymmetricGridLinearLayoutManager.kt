@@ -1,14 +1,36 @@
 package com.example.assymetricalgridlayoutmanager.layoutmanager
 
+import android.content.Context
 import android.graphics.Rect
+import android.util.AttributeSet
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 
-// todo add constructors for XML
-class AsymmetricGridLinearLayoutManager(private val spanCount: Int, private val spanProvider: SpanProvider) :
-    RecyclerView.LayoutManager() {
+@Suppress("MemberVisibilityCanBePrivate")
+class AsymmetricGridLinearLayoutManager @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0,
+    defStyleRes: Int = 0
+) : RecyclerView.LayoutManager() {
+
+    constructor(context: Context, spanCount: Int, spanProvider: SpanProvider) : this(context) {
+        this.spanCount = spanCount
+        this.spanProvider = spanProvider
+    }
 
     var isSquareCell = true
+    var spanProvider: SpanProvider? = null
+    var spanCount: Int = DEFAULT_SPAN_COUNT
+        set(value) {
+            if (value == spanCount) return
+
+            require(spanCount >= 1) { "Span count should be at least 1. Provided $spanCount" }
+            field = value
+            matrix = Matrix(value)
+            requestLayout()
+        }
+
     private var matrix = Matrix(spanCount)
     private var lowestView: ViewWrapper? = null
 
@@ -40,7 +62,8 @@ class AsymmetricGridLinearLayoutManager(private val spanCount: Int, private val 
         recycler: RecyclerView.Recycler
     ) {
         for (position in 0 until state.itemCount) {
-            val spanInfo = spanProvider.getSpanOnPosition(position)
+            val spanInfo = spanProvider?.getSpanOnPosition(position)
+                ?: throw IllegalStateException("SpanProvider is not exist. Set span provider for correct working LayoutManager")
             val coordinates = matrix.add(Matrix.Point(spanInfo.column, spanInfo.row))
 
             val view: View = recycler.getViewForPosition(position)
@@ -155,5 +178,10 @@ class AsymmetricGridLinearLayoutManager(private val spanCount: Int, private val 
             getPosition(firstView) > 0 -> dy
             else -> (getDecoratedTop(firstView) - paddingTop).coerceAtLeast(dy)
         }
+    }
+
+    companion object {
+
+        private const val DEFAULT_SPAN_COUNT = 2
     }
 }
